@@ -30,7 +30,7 @@ function lineDist(p1, p2, p) {
 }
 
 function quickHull(points) {
-    if (points.length < 3) throw Error("Need at least 3 points for quickhull!");
+    if (points.length < 3) return points;
     // sort points by x coordinates
     points.sort(xsort);
     // now we got points to use
