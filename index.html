@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Quickhull visualization</title>
+  <style>
+  body {
+    
+    background-color: rgb(103, 103, 103);
+    color: #cccccc;
+  }
+  canvas {
+    display: block;
+    margin: 1em auto;
+  }
+  #slider-container {
+    display: inline-block;
+    min-width: 20em;
+  }
+  </style>
+</head>
+<body>
+  <div id="explanation">
+    <p>A simple visualization of a convex hull. Click on the black area to add points</p>
+  </div>
+  
+  <canvas id="c">Well this is embarassing, canvas not supported by your browser</canvas>
+  <div id='controls-container'>
+    <div id="slider-container">
+      <input type="range" id="num-points" name="points" min="20" max="20000">
+      <label id ="p-label" for="points">Random Points to Add</label>
+    </div>
+    <button id="generate">Generate Random Points</button>
+    <button id="clear">Clear Points</button>
+  </div>
+  <script src="quickhull.js"></script>
+
+  <script>
+  canvas = document.getElementById("c");
+  canvas.width = window.innerWidth < window.innerHeight ? 0.5 * window.innerWidth : 0.5 * window.innerHeight;
+  canvas.height = canvas.width;
+  ctx = canvas.getContext("2d");
+
+  renderFlag = true;
+  mousePoints = [];
+  randomPoints = [];
+
+  function generateRandomPoints(numPoints) {
+      // sampling function, we don't want uniform, causes points in the center to clump up,
+    // prob of r < x should be (area swept by x in [0, 1] PI*x^2) / (circle of r 1 == PI)
+    let maxRadius = 0.75 * canvas.width / 2;
+    let center = {x: canvas.width/2, y: canvas.height/2};
+    let points = [];
+    for (var i = 0; i < numPoints; i++) {
+      var x = Math.random();
+      var r = (1 - x * x) * maxRadius;
+      var ang = Math.random() * 2 * Math.PI;
+      var point = {x: center.x + r * Math.cos(ang), y: center.y + r * Math.sin(ang)};
+      points.push(point);
+    }
+    return points;
+  }
+
+  function getHull(points) {
+    return quickHull(points);
+  }
+
+  function renderPoints(points) {
+    for (var i = 0; i < points.length; i++) {
+          ctx.strokeStyle = "white";
+          ctx.fillStyle = "white";
+          ctx.fillRect(points[i].x - 0.5, points[i].y - 0.5, 1, 1);
+      }
+  }
+  function renderHull(hull) {
+    ctx.beginPath();
+    for (var i = 0; i < hull.length; i++) {
+          var p1 = hull[i];
+          var p2 = hull[(i+1) % hull.length];
+          ctx.lineWidth = 0.5;
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+      }
+  }
+  function render() {
+    window.requestAnimationFrame(render);
+    if (!renderFlag) return;
+    renderFlag = false;
+    ctx.fillStyle = "black";
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+    
+
+    let points = [];
+    for (var i = 0; i < mousePoints.length; i++) points.push(mousePoints[i]);
+    for (var i = 0; i < randomPoints.length; i++) points.push(randomPoints[i]);
+    let hull = getHull(points);
+
+    renderPoints(points);
+    renderHull(hull);
+
+  }
+  
+  function getElCoordFromMousePress(el, mouseEvent) {
+    let rect = el.getBoundingClientRect();
+
+    return {x: mouseEvent.clientX - rect.left, y: mouseEvent.clientY - rect.top};
+  }
+
+  canvas.addEventListener('mousedown', function(e) {
+    mousePoints.push(getElCoordFromMousePress(canvas, e));
+
+    renderFlag = true;
+  });
+  document.getElementById('num-points').addEventListener('change', function() {
+    document.getElementById('p-label').innerText = document.getElementById('num-points').value;
+  });
+  document.getElementById('generate').addEventListener('click', function() {
+    let numPoints = Number(document.getElementById('num-points').value);
+    randomPoints = generateRandomPoints(numPoints)
+
+    renderFlag = true;
+  });
+
+  document.getElementById('clear').addEventListener('click', function() {
+    mousePoints = [];
+    randomPoints = [];
+
+    renderFlag = true;
+  });
+
+  render();
+  </script>
+</body>
+</html>
